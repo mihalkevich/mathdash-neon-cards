@@ -1,0 +1,7 @@
+{
+  "name": "MathDash: Neon Cards",
+  "description": "A high-energy, Geometry Dash-inspired math card game for 8-year-olds. Master addition, subtraction, and multiplication with neon visuals, combos, and level-based progression.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
