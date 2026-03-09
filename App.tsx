@@ -218,6 +218,18 @@ const App: React.FC = () => {
     setGameState(GameState.GAMEOVER);
   }, [gameMode, gameState, globalTimeLeft]);
 
+  // Blitz: global time countdown (every second)
+  useEffect(() => {
+    if (gameMode !== GameMode.BLITZ || gameState !== GameState.PLAYING) return;
+    const id = setInterval(() => {
+      setGlobalTimeLeft(t => {
+        if (t <= 1) return 0;
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [gameMode, gameState]);
+
   // Fetch math fact and save leaderboard on Game Over
   useEffect(() => {
     if (gameState !== GameState.GAMEOVER) return;
