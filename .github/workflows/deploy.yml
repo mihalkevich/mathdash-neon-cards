@@ -2,10 +2,13 @@ name: Deploy to Vercel
 
 on:
   push:
-    # TEMPORARY: the feature branch is listed so the first deploy can be
-    # verified before the workflow lands on main. Removed after verification.
-    branches: [main, claude/vercel-deploy]
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      attach_domain:
+        description: "Also attach game.hollybit.app to the project"
+        type: boolean
+        default: false
 
 concurrency:
   group: vercel-production
@@ -76,3 +79,14 @@ jobs:
           url=$(vercel deploy --prod --yes --token "$VERCEL_TOKEN")
           echo "$url"
           echo "### Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach custom domain
+        if: ${{ inputs.attach_domain }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          # The project argument is required: without it the domain lands on the
+          # account instead of the project, and subdomains are rejected outright.
+          vercel domains add game.hollybit.app mathdash-neon-cards --token "$VERCEL_TOKEN" \
+            || echo "::warning::could not attach game.hollybit.app — it may already be attached, check the log above"
+          vercel domains inspect game.hollybit.app --token "$VERCEL_TOKEN" >> "$GITHUB_STEP_SUMMARY"
