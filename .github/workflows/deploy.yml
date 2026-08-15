@@ -2,7 +2,9 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [main]
+    # TEMPORARY: the feature branch is listed so the first deploy can be
+    # verified before the workflow lands on main. Removed after verification.
+    branches: [main, claude/vercel-deploy]
   workflow_dispatch:
 
 concurrency:
