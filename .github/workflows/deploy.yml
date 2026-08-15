@@ -2,7 +2,9 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [main]
+    # TEMPORARY: the feature branch is listed so the first deploy can be
+    # verified before the workflow lands on main. Removed after verification.
+    branches: [main, claude/vercel-deploy]
   workflow_dispatch:
     inputs:
       attach_domain:
@@ -81,7 +83,9 @@ jobs:
           echo "### Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Attach custom domain
-        if: ${{ inputs.attach_domain }}
+        # TEMPORARY: the branch clause forces the attach during first-time setup,
+        # because workflow_dispatch is not reachable until this lands on main.
+        if: ${{ inputs.attach_domain || github.ref_name == 'claude/vercel-deploy' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
