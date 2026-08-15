@@ -4,6 +4,7 @@ import { GameState, GameMode, MathProblem, PlayerStats, LeaderboardEntry, Diffic
 import { GET_LEVELS, INITIAL_STATS, INITIAL_LEADERBOARD, ENCOURAGEMENTS, CORRECT_STREAK_FOR_LEVEL_UP } from './constants';
 import { saveSolvedProblem, getHistory, getLeaderboard, saveLeaderboard, getWeakSpots } from './lib/data';
 import { extractOperationAndPattern } from './lib/problemUtils';
+import { MULTIPLAYER_ENABLED } from './lib/features';
 import NeonButton from './components/NeonButton';
 import GameCard from './components/GameCard';
 import { Trophy, Zap, Clock, BrainCircuit, RotateCcw, Play, Infinity as InfinityIcon, Timer, Info, Users, MessageSquare, Layers, History, Share2, Copy, CheckCircle2 } from 'lucide-react';
@@ -249,6 +250,7 @@ const App: React.FC = () => {
 
   // WebSocket Logic
   useEffect(() => {
+    if (!MULTIPLAYER_ENABLED) return;
     if (gameState === GameState.MULTIPLAYER_LOBBY || gameMode === GameMode.MULTIPLAYER) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const socket = new WebSocket(`${protocol}//${window.location.host}`);
@@ -481,13 +483,15 @@ const App: React.FC = () => {
               desc="60 seconds. Maximize output."
               onClick={() => { setGameMode(GameMode.BLITZ); setGameState(GameState.PLAYING); setStats(INITIAL_STATS); setGlobalTimeLeft(60); generateProblem(); }}
             />
-            <ModeCard 
-              icon={<Users className="w-8 h-8" />}
-              title="Multiplayer"
-              desc="Battle real pilots in real-time."
-              variant="pink"
-              onClick={startMultiplayer}
-            />
+            {MULTIPLAYER_ENABLED && (
+              <ModeCard
+                icon={<Users className="w-8 h-8" />}
+                title="Multiplayer"
+                desc="Battle real pilots in real-time."
+                variant="pink"
+                onClick={startMultiplayer}
+              />
+            )}
             <ModeCard 
               icon={<BrainCircuit className="w-8 h-8" />}
               title="Trio"
@@ -508,16 +512,18 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="flex justify-center gap-4">
-            <input 
-              type="text" 
-              placeholder="ROOM CODE" 
-              className="bg-slate-950 border-2 border-pink-500/30 p-3 font-orbitron text-pink-500 focus:border-pink-500 outline-none text-center w-40"
-              onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-            />
-            <NeonButton variant="pink" onClick={() => joinMultiplayer(roomId)}>Join Room</NeonButton>
-          </div>
-          
+          {MULTIPLAYER_ENABLED && (
+            <div className="flex justify-center gap-4">
+              <input
+                type="text"
+                placeholder="ROOM CODE"
+                className="bg-slate-950 border-2 border-pink-500/30 p-3 font-orbitron text-pink-500 focus:border-pink-500 outline-none text-center w-40"
+                onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+              />
+              <NeonButton variant="pink" onClick={() => joinMultiplayer(roomId)}>Join Room</NeonButton>
+            </div>
+          )}
+
           <button onClick={() => setGameState(GameState.START)} className="block mx-auto text-cyan-400/50 font-orbitron hover:text-cyan-400 transition-colors">
             BACK TO MAIN
           </button>

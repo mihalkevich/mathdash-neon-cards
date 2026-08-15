@@ -45,6 +45,7 @@ cp .env.example .env
 | `PORT` | Порт сервера (по умолчанию 3000) |
 | `VITE_SUPABASE_URL` | URL проекта Supabase |
 | `VITE_SUPABASE_ANON_KEY` | Anon key Supabase |
+| `VITE_ENABLE_MULTIPLAYER` | `true` включает режим Multiplayer. Требует запущенный `server.ts` |
 
 ## Supabase
 
@@ -52,14 +53,28 @@ cp .env.example .env
 2. Выполни SQL из `supabase/migrations/20240309000000_initial_schema.sql` в SQL Editor
 3. Добавь `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` в `.env`
 
-## Деплой на Railway
+## Деплой
 
-```bash
-npm run build
-railway up
-```
+### Vercel (текущий прод)
 
-Или через GitHub: подключи репозиторий в Railway, добавь переменные `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY`.
+`vercel.json` уже настроен, `.github/workflows/deploy.yml` собирает и деплоит.
+Нужен один секрет репозитория — `VERCEL_TOKEN` (Settings → Secrets and variables
+→ Actions). Опционально `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY`: без них
+история и лидерборд живут в localStorage.
+
+Деплой идёт на каждый push в `main` либо вручную из вкладки Actions.
+
+**Multiplayer на Vercel недоступен.** Режиму нужен постоянный WebSocket-сервер из
+`server.ts` с комнатами в памяти, а serverless-функции не держат сокет открытым и
+не делят память между инстансами. Поэтому `VITE_ENABLE_MULTIPLAYER` не выставлен
+и режим скрыт — вместо зависающего лобби. Остальные режимы полностью клиентские
+и работают. `/api/math-fact` вынесен в serverless-функцию `api/math-fact.ts`.
+
+### Хост с постоянным процессом (Railway, Render, Fly.io)
+
+Там работает всё, включая Multiplayer: `server.ts` раздаёт `dist` и держит WebSocket.
+Конфиги `railway.json` и `nixpacks.toml` лежат в репозитории. Не забудь выставить
+`VITE_ENABLE_MULTIPLAYER=true` на этапе сборки, иначе режим останется скрытым.
 
 ## Скрипты
 

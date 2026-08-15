@@ -1,0 +1,76 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check credentials
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN secret is not set. Add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Type-check and build
+        run: |
+          npm run lint
+          npm run build
+          test -s dist/index.html || { echo "::error::dist/index.html missing"; exit 1; }
+          ls dist/assets/*.js >/dev/null 2>&1 || { echo "::error::no JS bundle emitted"; exit 1; }
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@58
+
+      - name: Link project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel link --yes --project mathdash-neon-cards --token "$VERCEL_TOKEN"
+
+      # Client-side Supabase config. Optional: the game falls back to
+      # localStorage when these are absent (see lib/supabase.ts).
+      - name: Sync Supabase config
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
+            value="${!name}"
+            if [ -z "$value" ]; then
+              echo "::notice::$name not set, skipping — the game will use localStorage"
+              continue
+            fi
+            for target in production preview development; do
+              printf '%s' "$value" \
+                | vercel env add "$name" "$target" --token "$VERCEL_TOKEN" \
+                || echo "::warning::could not set $name for $target — it may already exist"
+            done
+          done
+
+      - name: Deploy to production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          url=$(vercel deploy --prod --yes --token "$VERCEL_TOKEN")
+          echo "$url"
+          echo "### Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
